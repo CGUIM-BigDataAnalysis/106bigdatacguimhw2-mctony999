@@ -1,6 +1,6 @@
 106-2 大數據分析方法 作業二
 ================
-Yi-Ju Tseng
+機械四 蕭瑋彤 B0322036
 
 作業完整說明[連結](https://docs.google.com/document/d/1aLGSsGXhgOVgwzSg9JdaNz2qGPQJSoupDAQownkGf_I/edit?usp=sharing)
 
@@ -12,68 +12,137 @@ Yi-Ju Tseng
 ### 資料匯入與處理
 
 ``` r
-#這是R Code Chunk
+library(readr)
+library(jsonlite)
+library(dplyr)
+library(httr)
+library(RCurl)
+library(knitr)
+library(rmarkdown)
+library(rvest)
+library(ggplot2)
+library(choroplethr)
+library(choroplethrMaps)
+library(ggmap)
+library(data.table)
+library(plotly)
+library(rworldmap)
+#Qustion1-3
+#Country Data import
+Foreign_inTW_103_C <- read_csv("http://stats.moe.gov.tw/files/detail/103/103_ab103_C.csv")
+Foreign_inTW_104_C <- read_csv("http://stats.moe.gov.tw/files/detail/104/104_ab104_C.csv")
+Foreign_inTW_105_C <- read_csv("http://stats.moe.gov.tw/files/detail/105/105_ab105_C.csv")
+Foreign_inTW_106_C <- read_csv("http://stats.moe.gov.tw/files/detail/106/106_ab105_C.csv")
+col_Name_C <- c("州","國家","學位生-正式修讀學位外國生","學位生-僑生(含港澳)","學位生-正式修讀學位陸生",
+              "非學位生-外國交換生","非學位生-外國短期研習及個人選讀","非學位生-大專附設華語文中心學生","非學位生-大陸研修生","非學位生-海青班","境外專班")
+names(Foreign_inTW_103_C) <- col_Name_C 
+names(Foreign_inTW_104_C) <- col_Name_C 
+names(Foreign_inTW_105_C) <- col_Name_C 
+names(Foreign_inTW_106_C) <- col_Name_C 
+Foreign_inTW_ALL_C <- rbind(Foreign_inTW_103_C,Foreign_inTW_104_C) %>% rbind(Foreign_inTW_105_C,Foreign_inTW_106_C)
+#School Data import
+Foreign_inTW_103_S <- read_csv("http://stats.moe.gov.tw/files/detail/103/103_ab103_S.csv")
+Foreign_inTW_104_S <- read_csv("http://stats.moe.gov.tw/files/detail/104/104_ab104_S.csv")
+Foreign_inTW_105_S <- read_csv("http://stats.moe.gov.tw/files/detail/105/105_ab105_S.csv")
+Foreign_inTW_106_S <- read_csv("http://stats.moe.gov.tw/files/detail/106/106_ab105_S.csv")
+col_Name_S <- c("學校類型","學校代碼","學校名稱","學位生-正式修讀學位外國生","學位生-僑生(含港澳)","學位生-正式修讀學位陸生",
+                "非學位生-外國交換生","非學位生-外國短期研習及個人選讀","非學位生-大專附設華語文中心學生","非學位生-大陸研修生","非學位生-海青班","境外專班")
+names(Foreign_inTW_103_S) <- col_Name_S
+names(Foreign_inTW_104_S) <- col_Name_S
+names(Foreign_inTW_105_S) <- col_Name_S
+names(Foreign_inTW_106_S) <- col_Name_S
+Foreign_inTW_ALL_S <- rbind(Foreign_inTW_103_S,Foreign_inTW_104_S) %>% rbind(Foreign_inTW_105_S,Foreign_inTW_106_S)
+Foreign_inTW_ALL_S$`非學位生-大陸研修生` <- ifelse(Foreign_inTW_ALL_S$`非學位生-大陸研修生`== "…",0,Foreign_inTW_ALL_S$`非學位生-大陸研修生`) %>% as.numeric()
+
+#question 1-3
+Foreign_inTW_ALL_C$studentNumber <- rowSums(Foreign_inTW_ALL_C[,3:11]) 
+Foreign_inTW_ALL_S$studentNumber <- rowSums(Foreign_inTW_ALL_S[,4:12])
+Foreign_inTW_ALL_C <- data.table(Foreign_inTW_ALL_C)
+Foreign_inTW_ALL_S <- data.table(Foreign_inTW_ALL_S)
+Student_countryTOP10 <- Foreign_inTW_ALL_C[,.(`學生人數` = sum(studentNumber)),by= `國家`] %>%
+  arrange(desc(`學生人數`)) %>% head(10)
+Student_SchoolTOP10 <- Foreign_inTW_ALL_S[,.(`學生人數`= sum(studentNumber)),by= `學校名稱`] %>%
+  arrange(desc(`學生人數`)) %>% head(10)
+unknownSchool <- Foreign_inTW_ALL_S[c(304,458,612),]
 ```
 
 ### 哪些國家來台灣唸書的學生最多呢？
 
 ``` r
-#這是R Code Chunk
-head(iris)
+knitr::kable(Student_countryTOP10)
 ```
 
-    ##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
-    ## 1          5.1         3.5          1.4         0.2  setosa
-    ## 2          4.9         3.0          1.4         0.2  setosa
-    ## 3          4.7         3.2          1.3         0.2  setosa
-    ## 4          4.6         3.1          1.5         0.2  setosa
-    ## 5          5.0         3.6          1.4         0.2  setosa
-    ## 6          5.4         3.9          1.7         0.4  setosa
-
-``` r
-knitr::kable(head(iris))
-```
-
-|  Sepal.Length|  Sepal.Width|  Petal.Length|  Petal.Width| Species |
-|-------------:|------------:|-------------:|------------:|:--------|
-|           5.1|          3.5|           1.4|          0.2| setosa  |
-|           4.9|          3.0|           1.4|          0.2| setosa  |
-|           4.7|          3.2|           1.3|          0.2| setosa  |
-|           4.6|          3.1|           1.5|          0.2| setosa  |
-|           5.0|          3.6|           1.4|          0.2| setosa  |
-|           5.4|          3.9|           1.7|          0.4| setosa  |
-
-``` r
-library(knitr)
-kable(head(iris))
-```
-
-|  Sepal.Length|  Sepal.Width|  Petal.Length|  Petal.Width| Species |
-|-------------:|------------:|-------------:|------------:|:--------|
-|           5.1|          3.5|           1.4|          0.2| setosa  |
-|           4.9|          3.0|           1.4|          0.2| setosa  |
-|           4.7|          3.2|           1.3|          0.2| setosa  |
-|           4.6|          3.1|           1.5|          0.2| setosa  |
-|           5.0|          3.6|           1.4|          0.2| setosa  |
-|           5.4|          3.9|           1.7|          0.4| setosa  |
+| 國家     | 學生人數 |
+|:---------|:--------:|
+| 中國大陸 |  152524  |
+| 馬來西亞 |   62031  |
+| 香港     |   31940  |
+| 日本     |   28200  |
+| 越南     |   21670  |
+| 澳門     |   20302  |
+| 印尼     |   19620  |
+| 南韓     |   16948  |
+| 美國     |   14846  |
+| 泰國     |   7035   |
 
 ### 哪間大學的境外生最多呢？
 
 ``` r
-#這是R Code Chunk
+knitr::kable(Student_SchoolTOP10)
 ```
+
+| 學校名稱         | 學生人數 |
+|:-----------------|:--------:|
+| 無法區分校別     |   92586  |
+| 國立臺灣師範大學 |   22113  |
+| 國立臺灣大學     |   18199  |
+| 中國文化大學     |   16074  |
+| 銘傳大學         |   16057  |
+| 淡江大學         |   13887  |
+| 國立政治大學     |   11626  |
+| 國立成功大學     |   10982  |
+| 輔仁大學         |   9499   |
+| 逢甲大學         |   9474   |
+
+看到是無法區分校別的人數最多，讓我覺得十分好奇，於是去找了之後發現
+
+``` r
+knitr::kable(unknownSchool)
+```
+
+| 學校類型 | 學校代碼 | 學校名稱     | 學位生-正式修讀學位外國生 | 學位生-僑生(含港澳) | 學位生-正式修讀學位陸生 | 非學位生-外國交換生 | 非學位生-外國短期研習及個人選讀 | 非學位生-大專附設華語文中心學生 | 非學位生-大陸研修生 | 非學位生-海青班 | 境外專班 |  studentNumber|
+|:---------|:---------|:-------------|:-------------------------:|:-------------------:|:-----------------------:|:-------------------:|:-------------------------------:|:-------------------------------:|:-------------------:|:---------------:|:--------:|--------------:|
+| 無       | 9999     | 無法區分校別 |             0             |          0          |            0            |          0          |                0                |                0                |        34114        |        0        |     0    |          34114|
+| 無       | 9999     | 無法區分校別 |             0             |          0          |            0            |          0          |                0                |                0                |        32648        |        0        |     0    |          32648|
+| 無       | 9999     | 無法區分校別 |             0             |          0          |            0            |          0          |                0                |                0                |        25824        |        0        |     0    |          25824|
+
+這9萬名學生的組成全部都是大陸研修生，代表在台灣有超過9萬名陸生根本不知道他是去哪所學校，這真的十分有趣。
 
 ### 各個國家來台灣唸書的學生人數條狀圖
 
 ``` r
-#這是R Code Chunk
+question2 <- Student_countryTOP10
+ggplot()+geom_bar(data = question2,aes(x = `國家`,y = `學生人數`),stat = "identity")
 ```
+
+![](InternationalStudents_files/figure-markdown_github/ToTWNCountryBar-1.png)
 
 ### 各個國家來台灣唸書的學生人數面量圖
 
 ``` r
-#這是R Code Chunk
+Student_countryTOP10$country <- c("CHN","MYS","HKG","JPN","VNM","MAC","IDN","KOR","USA","THA")
+question3Plot <- joinCountryData2Map(Student_countryTOP10, joinCode="ISO3", nameJoinColumn="country")
 ```
+
+    ## 10 codes from your data successfully matched countries in the map
+    ## 0 codes from your data failed to match with a country code in the map
+    ## 233 codes from the map weren't represented in your data
+
+``` r
+mapCountryData(question3Plot , nameColumnToPlot="學生人數", mapTitle="外國學生人數與國家面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
+```
+
+![](InternationalStudents_files/figure-markdown_github/ToTWNCountryMap-1.png)
 
 台灣學生國際交流分析
 --------------------
@@ -81,32 +150,78 @@ kable(head(iris))
 ### 資料匯入與處理
 
 ``` r
-#這是R Code Chunk
+#Question 4-6
+Question4Data2 <- read.csv("~/GitHub/106bigdatacguimhw2-mctony999/Question4Data2.csv", stringsAsFactors=FALSE)
+Question4Data2 <- data.table(Question4Data2)
+Question4Data2$"對方國別" <- ifelse(Question4Data2$"對方國別" == "大陸地區","中國大陸",Question4Data2$"對方國別")
+TWStudent_countryTOP10 <- Question4Data2[,.(`學生人數` = sum(`總計`)),by= `對方國別`] %>%
+  arrange(desc(`學生人數`)) %>% head(10)
+TWStudent_SchoolTOP10 <- Question4Data2[,.(`學生人數` = sum(`總計`)),by= `學校名稱`] %>%
+  arrange(desc(`學生人數`)) %>% head(10)
 ```
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流呢？
 
 ``` r
-#這是R Code Chunk
+knitr::kable(TWStudent_countryTOP10)
 ```
+
+| 對方國別 | 學生人數 |
+|:---------|:--------:|
+| 中國大陸 |   9891   |
+| 日本     |   7142   |
+| 美國     |   4427   |
+| 南韓     |   2050   |
+| 德國     |   1466   |
+| 法國     |   1258   |
+| 英國     |    742   |
+| 加拿大   |    689   |
+| 西班牙   |    642   |
+| 香港     |    572   |
 
 ### 哪間大學的出國交流學生數最多呢？
 
 ``` r
-#這是R Code Chunk
+knitr::kable(TWStudent_SchoolTOP10)
 ```
+
+| 學校名稱     | 學生人數 |
+|:-------------|:--------:|
+| 國立臺灣大學 |   2224   |
+| 淡江大學     |   2038   |
+| 國立政治大學 |   1876   |
+| 逢甲大學     |   1346   |
+| 元智大學     |   1106   |
+| 國立臺北大學 |    956   |
+| 國立交通大學 |    951   |
+| 東海大學     |    931   |
+| 東吳大學     |    873   |
+| 國立成功大學 |    846   |
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流條狀圖
 
 ``` r
-#這是R Code Chunk
+ggplot()+geom_bar(data = TWStudent_countryTOP10,aes(x = `對方國別`, y = `學生人數`),stat = "identity")
 ```
+
+![](InternationalStudents_files/figure-markdown_github/FromTWNCountryBar-1.png)
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流面量圖
 
 ``` r
-#這是R Code Chunk
+TWStudent_countryTOP10$country <- c("CHN","JPN","USA","KOR","DEU","FRA","GBR","CAN","ESP","HKG")
+question6Plot <- joinCountryData2Map(TWStudent_countryTOP10, joinCode="ISO3", nameJoinColumn="country")
 ```
+
+    ## 10 codes from your data successfully matched countries in the map
+    ## 0 codes from your data failed to match with a country code in the map
+    ## 233 codes from the map weren't represented in your data
+
+``` r
+mapCountryData(question6Plot , nameColumnToPlot="學生人數", mapTitle="台灣進修交流面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
+```
+
+![](InternationalStudents_files/figure-markdown_github/FromTWNCountryMap-1.png)
 
 台灣學生出國留學分析
 --------------------
@@ -114,20 +229,49 @@ kable(head(iris))
 ### 資料匯入與處理
 
 ``` r
-#這是R Code Chunk
+#Qestion 7-8
+Question7Data <- read_csv("a.csv")
+Question7Data <- Question7Data[,1:3] %>% data.table()
+Question7Top10 <- arrange(Question7Data,desc(`總人數`)) %>% head(10)
 ```
 
 ### 台灣學生最喜歡去哪些國家留學呢？
 
 ``` r
-#這是R Code Chunk
+knitr::kable(Question7Top10)
 ```
+
+| 洲別   | 國別     | 總人數 |
+|:-------|:---------|:------:|
+| 美洲   | 美國     |  21127 |
+| 大洋洲 | 澳大利亞 |  13582 |
+| 亞洲   | 日本     |  8444  |
+| 美洲   | 加拿大   |  4827  |
+| 歐洲   | 英國     |  3815  |
+| 歐洲   | 德國     |  1488  |
+| 大洋洲 | 紐西蘭   |  1106  |
+| 歐洲   | 波蘭     |   561  |
+| 亞洲   | 馬來西亞 |   502  |
+| 歐洲   | 奧地利   |   419  |
 
 ### 台灣學生最喜歡去哪些國家留學面量圖
 
 ``` r
-#這是R Code Chunk
+Question7Top10$country <- c("USA","AUS","JPN","CAN","GBR","DEU","NZL","POL","MYS","AUT")
+question8Plot <- joinCountryData2Map(Question7Top10, joinCode="ISO3", nameJoinColumn="country")
 ```
+
+    ## 10 codes from your data successfully matched countries in the map
+    ## 0 codes from your data failed to match with a country code in the map
+    ## 233 codes from the map weren't represented in your data
+
+``` r
+mapCountryData(question8Plot , nameColumnToPlot="總人數", mapTitle="台灣出國留學國家面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
+```
+
+    ## You asked for 7 categories, 5 were used due to pretty() classification
+
+![](InternationalStudents_files/figure-markdown_github/FromTWNAbMap-1.png)
 
 綜合分析
 --------

@@ -1,0 +1,161 @@
+---
+title: "106-2 大數據分析方法 作業一"
+output: github_document
+author: 機械四 B0322036 蕭瑋彤
+---
+
+搞不清楚各行各業的薪資差異嗎? 念研究所到底對第一份工作的薪資影響有多大? CP值高嗎? 透過分析**初任人員平均經常性薪資**- [開放資料連結](https://data.gov.tw/dataset/6647)，可初步了解台灣近幾年各行各業、各學歷的起薪。
+
+## 比較103年度和105年度大學畢業者的薪資資料
+
+### 資料匯入與處理
+```{r dataload}
+library(jsonlite)
+library(dplyr)
+library(jsonlite)
+library(dplyr)
+library(httr)
+library(jsonlite)
+library(RCurl)
+library(knitr)
+library(rmarkdown)
+TargetOpendata <- fromJSON("https://data.gov.tw/api/v1/rest/dataset/A17000000J-020066") #500是分類編號
+Opendataframe <- TargetOpendata$result$distribution
+data104 <- fromJSON(Opendataframe[2,5])
+data103 <- fromJSON(Opendataframe[8,5])
+data105 <- fromJSON(Opendataframe[17,5])
+dataAll <- inner_join(data103,data104, by= "大職業別") %>% inner_join(data105,by= "大職業別")
+#數值轉換開始
+dataAll$`大學-薪資.x` <- gsub("—",NA,dataAll$`大學-薪資.x`) %>% as.numeric()
+dataAll$`大學-薪資.y` <- gsub("—",NA,dataAll$`大學-薪資.y`) %>% as.numeric()
+dataAll$`大學-薪資` <- gsub("—",NA,dataAll$`大學-薪資`) %>% as.numeric()
+
+dataAll$`大學-女/男.x` <- gsub("—",NA,dataAll$`大學-女/男.x`)
+dataAll$`大學-女/男.x` <- ifelse(dataAll$`大學-女/男.x`== "…",NA,dataAll$`大學-女/男.x`) %>% as.numeric()
+dataAll$`大學-女/男.y` <- gsub("—",NA,dataAll$`大學-女/男.y`) 
+dataAll$`大學-女/男.y` <- ifelse(dataAll$`大學-女/男.y`== "…",NA,dataAll$`大學-女/男.y`) %>% as.numeric()
+dataAll$`大學-女/男` <- gsub("—",NA,dataAll$`大學-女/男`) 
+dataAll$`大學-女/男` <- ifelse(dataAll$`大學-女/男`== "… ",NA,dataAll$`大學-女/男`) %>% as.numeric()
+
+dataAll$`研究所及以上-薪資.x`<- gsub("—",NA,dataAll$`研究所及以上-薪資.x`) %>% as.numeric()
+dataAll$`研究所及以上-薪資.y`<- gsub("—",NA,dataAll$`研究所及以上-薪資.y`) %>% as.numeric()
+dataAll$`研究所及以上-薪資`<- gsub("—",NA,dataAll$`研究所及以上-薪資`) %>% as.numeric()
+
+#qustion 1
+question1Data <- dataAll[,c(2,11,37)] #c(2,11,24,28)
+question1Data$salaryRrate <- question1Data$`大學-薪資`/question1Data$`大學-薪資.x`
+question1Data <- question1Data[complete.cases(question1Data$salaryRrate),] #清除NA值
+question1Data <- arrange(question1Data,desc(salaryRrate))
+colnames(question1Data) <- c("大職業別","103年大學薪資","105年大學薪資","薪水比例")
+
+Over5Pcareer <- question1Data[ifelse(question1Data$'薪水比例'>1.05,T,F),]
+Over5PcareerTable <- question1Data[ifelse(question1Data$'薪水比例'>1.05,T,F),]
+Top10Career <- head(question1Data,10)
+Over5PcareerTable$'大職業別' <- strsplit(Over5PcareerTable$'大職業別',"-")
+CareerTable <- NULL
+for (i in 1:nrow(Over5PcareerTable)){
+  CareerTable[i] <- Over5PcareerTable$'大職業別'[[i]][1]
+}
+Careercount <- table(CareerTable)
+
+#question 2
+question2Data <- dataAll[,c(2,12,25,38)]
+question2Data <- question2Data[complete.cases(question2Data),] #清除NA值
+colnames(question2Data) <- c("大職業別","103年薪資男女比","104年薪資男女比","105年薪資男女比")
+BGSR103 <- question2Data[,c(1:2)] 
+BGSR103up <- head(arrange(BGSR103,desc(BGSR103[,2])),10)
+BGSR103down <- head(arrange(BGSR103,BGSR103[,2]),10)
+
+BGSR104 <- question2Data[,c(1,3)] 
+BGSR104up <- head(arrange(BGSR104,desc(BGSR104[,2])),10)
+BGSR104down <- head(arrange(BGSR104,BGSR104[,2]),10)
+
+BGSR105 <- question2Data[,c(1,4)] 
+BGSR105up <- head(arrange(BGSR105,desc(BGSR105[,2])),10)
+BGSR105down <- head(arrange(BGSR105,BGSR105[,2]),10)
+
+#question 3
+question3Data <- dataAll[,c(2,37,39)]
+question3Data$SalaryRate <- question3Data$`研究所及以上-薪資`/question3Data$`大學-薪資`
+question3Data <- question3Data[complete.cases(question3Data),]
+question3Data <- head(arrange(question3Data,desc(SalaryRate)),10)
+question3Data$"薪水差距" <- question3Data$`研究所及以上-薪資`- question3Data$`大學-薪資`
+```
+
+### 105年度薪資較103年度薪資高的職業有哪些? 
+前10名105年度薪資比103年度薪資高的職業如下表所示：
+
+```{r compare103105}
+knitr::kable(Top10Career)
+```
+
+結果可知薪資漲幅前十名中皆為傳統產業或餐飲服務業，沒有電子業或高科技產業的出現。
+
+### 提高超過5%的的職業有哪些? 
+薪資提高超過5%的職業如下表所示：
+```{r over5}
+knitr::kable(Over5Pcareer)
+```
+
+薪資提高超過5%的職業，大部分為銷售、技術人員、事務支援人員或專業人員。
+
+### 主要的職業種別是哪些種類呢?
+結果如下表所示：
+```{r mainType}
+knitr::kable(Careercount)
+```
+
+會發現佔據薪資增幅5%中的前兩名分別為，「用水供應及汙染整治業」和「資訊及通訊傳播業」、「住宿及餐飲業」，其中「用水供應及汙染整治業」就有5個排名第一，而「資訊及通訊傳播業」和「住宿及餐飲業」也各有4個並列第二。
+
+## 男女同工不同酬現況分析
+
+男女同工不同酬一直是性別平等中很重要的問題，分析資料來源為103到105年度的大學畢業薪資。
+
+### 103到105年度的大學畢業薪資資料，哪些行業男生薪資比女生薪資多?
+下表為103~105各年度，男生薪資比女生薪資多的列表：
+```{r male}
+
+knitr::kable(BGSR103down)
+knitr::kable(BGSR104down)
+knitr::kable(BGSR105down)
+```
+
+可以發現在103年的時候後，大部分男生比女生薪水多的行業是工作內容比較粗重的，如砂石、礦業這類的技術操作員，和些許的服務業，而104年的時候結構並沒有太大幅度的變動，但是到了105年會發現，礦業不見了，變成絕大多數都是營造和不動產，而且工作內容也不再是技術操作人員之類的粗重工作，而是變成事務支援人員、專業人員和銷售人員。其中男女之間薪水差距，在103年時差距最大達到15%，而即便到了105年男女薪水之間的差異雖然有改善一些，但是差距最大還是有大約有9%的落差，還沒有落實到男女全部同工同酬。
+
+### 哪些行業女生薪資比男生薪資多? 
+下表為103~105各年度，女生薪資比男生薪資多或一樣多的列表：
+```{r female}
+knitr::kable(BGSR103up)
+knitr::kable(BGSR104up)
+knitr::kable(BGSR105up)
+```
+
+女生薪資比男生多的行業只有兩個，分別是104年的「專業、科學及技術服務業」中的操作組裝人員和105年的「金融及保險業」的專業人員，其他行業女生薪資最多就跟男生一樣多。看到這個結果我覺得的很震驚，因為雖然我早就有聽說過會同工不同酬的情況發生，但是我不知的是起薪居然大部分都是男生比女生多，而女生比男生多的情況寥寥無幾，且就算女生薪水比較多也只多一點點而已，落差不大，我不知道這種薪水差異情況，會不會在工作幾年之後有所改善。
+
+## 研究所薪資差異
+
+以105年度的資料來看，哪個職業別念研究所最划算呢 (研究所學歷薪資與大學學歷薪資增加比例最多)?
+
+下表為念研究所後薪水增幅最大前10名：
+```{r grad}
+knitr::kable(question3Data)
+```
+
+第一名為「專業、科學及技術服務業-專業人員」，薪資漲幅達24%之多，是讀研究所最划算的工作了。
+
+## 我有興趣的職業別薪資狀況分析
+我有興趣的職業是工程師，所以應該是：
+1.專業、科學及技術服務業-專業人員
+2.資訊及通訊傳播業-專業人員
+
+### 有興趣的職業別篩選，呈現薪資
+```{r like}
+knitr::kable(question3Data[c(1,4),c(1,2:3)])
+```
+
+### 這些職業別研究所薪資與大學薪資差多少呢？
+```{r likeGrad}
+knitr::kable(question3Data[c(1,4),c(1,5)])
+```
+
+我目前不想讀研究所，雖然看到了我想要的職業，研究所畢業跟大學畢業的起薪差距都到6000以上，但是這方面的資訊已經聽學長和教授說過了，所以個人並不太感到意外。目前也不會因為這樣就跑去唸研究所，因為我對於要讀研究所的目的性實在太低，我認為若要以「讀研究所會有比較好的起薪」這樣的想法去讀研究所，我應該會在研究所打混摸魚洗學歷而已吧？這樣根本是浪費時間，而且說實話自己也不太清楚機械方面的工作會不會因為跟想像中有落差而不喜歡，因此我還是想先離開學校看看，若發現有需要研究所，那我再回學校念書，雖然會比較辛苦一點，但我認為這樣或許比較適合我。
