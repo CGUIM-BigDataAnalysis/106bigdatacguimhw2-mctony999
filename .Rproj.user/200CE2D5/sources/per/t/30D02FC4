@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1527232890862.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "30D02FC4",
+    "lastKnownWriteTime" : 7308604914264011873,
+    "last_content_update" : 1527232890862,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "E62EECA9",
+        "caption" : "Question2Data",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=Question2Data&cache_key=E62EECA9",
+        "displayedObservations" : 177,
+        "environment" : "",
+        "object" : "Question2Data",
+        "preview" : 0,
+        "totalObservations" : 177,
+        "variables" : 0
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

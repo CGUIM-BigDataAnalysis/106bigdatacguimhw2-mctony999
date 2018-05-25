@@ -1,0 +1,17 @@
+a<-"abc"
+a
+a
+score<-59
+if(score>=60){
+  print("及格")
+}else{
+  print("不及格")
+}
+
+其他 <- 1
+
+
+a<- c(1,2,3)
+b<- c(4,5,6)
+c <- rbind(a,b)
+c <- c[-1,]
