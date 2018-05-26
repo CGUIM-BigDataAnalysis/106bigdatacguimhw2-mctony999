@@ -28,20 +28,19 @@ library(ggmap)
 library(data.table)
 library(plotly)
 library(rworldmap)
-#Qustion1-3
-#Country Data import
+#Qustion1-3 Country
 Foreign_inTW_103_C <- read_csv("http://stats.moe.gov.tw/files/detail/103/103_ab103_C.csv")
 Foreign_inTW_104_C <- read_csv("http://stats.moe.gov.tw/files/detail/104/104_ab104_C.csv")
 Foreign_inTW_105_C <- read_csv("http://stats.moe.gov.tw/files/detail/105/105_ab105_C.csv")
 Foreign_inTW_106_C <- read_csv("http://stats.moe.gov.tw/files/detail/106/106_ab105_C.csv")
 col_Name_C <- c("州","國家","學位生-正式修讀學位外國生","學位生-僑生(含港澳)","學位生-正式修讀學位陸生",
-              "非學位生-外國交換生","非學位生-外國短期研習及個人選讀","非學位生-大專附設華語文中心學生","非學位生-大陸研修生","非學位生-海青班","境外專班")
+                "非學位生-外國交換生","非學位生-外國短期研習及個人選讀","非學位生-大專附設華語文中心學生","非學位生-大陸研修生","非學位生-海青班","境外專班")
 names(Foreign_inTW_103_C) <- col_Name_C 
 names(Foreign_inTW_104_C) <- col_Name_C 
 names(Foreign_inTW_105_C) <- col_Name_C 
 names(Foreign_inTW_106_C) <- col_Name_C 
 Foreign_inTW_ALL_C <- rbind(Foreign_inTW_103_C,Foreign_inTW_104_C) %>% rbind(Foreign_inTW_105_C,Foreign_inTW_106_C)
-#School Data import
+#Question1-3 School
 Foreign_inTW_103_S <- read_csv("http://stats.moe.gov.tw/files/detail/103/103_ab103_S.csv")
 Foreign_inTW_104_S <- read_csv("http://stats.moe.gov.tw/files/detail/104/104_ab104_S.csv")
 Foreign_inTW_105_S <- read_csv("http://stats.moe.gov.tw/files/detail/105/105_ab105_S.csv")
@@ -54,30 +53,47 @@ names(Foreign_inTW_105_S) <- col_Name_S
 names(Foreign_inTW_106_S) <- col_Name_S
 Foreign_inTW_ALL_S <- rbind(Foreign_inTW_103_S,Foreign_inTW_104_S) %>% rbind(Foreign_inTW_105_S,Foreign_inTW_106_S)
 Foreign_inTW_ALL_S$`非學位生-大陸研修生` <- ifelse(Foreign_inTW_ALL_S$`非學位生-大陸研修生`== "…",0,Foreign_inTW_ALL_S$`非學位生-大陸研修生`) %>% as.numeric()
-
 #question 1-3
 Foreign_inTW_ALL_C$studentNumber <- rowSums(Foreign_inTW_ALL_C[,3:11]) 
 Foreign_inTW_ALL_S$studentNumber <- rowSums(Foreign_inTW_ALL_S[,4:12])
 Foreign_inTW_ALL_C <- data.table(Foreign_inTW_ALL_C)
 Foreign_inTW_ALL_S <- data.table(Foreign_inTW_ALL_S)
-Student_countryTOP10 <- Foreign_inTW_ALL_C[,.(`學生人數` = sum(studentNumber)),by= `國家`] %>%
-  arrange(desc(`學生人數`)) %>% head(10)
-Student_SchoolTOP10 <- Foreign_inTW_ALL_S[,.(`學生人數`= sum(studentNumber)),by= `學校名稱`] %>%
-  arrange(desc(`學生人數`)) %>% head(10)
-unknownSchool <- Foreign_inTW_ALL_S[c(304,458,612),]
+
+Student_country <- Foreign_inTW_ALL_C[,.(`學生人數` = sum(studentNumber)),by= `國家`] %>% arrange(desc(`學生人數`)) #外國學生全部資料
+Student_country$國家[1] <- "中國"
+Question3Data <- Student_country
+#make people less 200 into others
+Question2Data<- Student_country[1:67,]
+a <- c("其他國家" ,4494)
+Question2Data <- rbind(Question2Data,a)
+Question2Data$學生人數 <- as.numeric(Question2Data$學生人數)
+
+Student_countryTOP10 <- Student_country %>% head(10) #國家取前10名
+Student_School <- Foreign_inTW_ALL_S[,.(`學生人數` = sum(studentNumber)),by= `學校名稱`] %>% arrange(desc(`學生人數`)) #本國學生全部資料
+Student_SchoolTOP10 <- Student_School %>% head(10) #學校取前10名
+
+countrycodelist <- fromJSON("https://gist.githubusercontent.com/jacobbubu/060d84c2bdf005d412db/raw/845c78f55e49fee89814bdc599355069f07b7ee6/countries.json")
+countrycodelist <- countrycodelist[,c(2,5,7)]
+countrycodelist[48,3] <- "中國"
+unknownSchool <- Foreign_inTW_ALL_S[c(304,458,612),] #不分區學校資料
 ```
 
 ### 哪些國家來台灣唸書的學生最多呢？ 
+前三名分別為中國、馬來西亞和香港，前五名皆為亞洲地區國家。
+
 ```{r ToTWNCountry,warning=FALSE}
 knitr::kable(Student_countryTOP10)
 ```
 
 ### 哪間大學的境外生最多呢？
+第一名和第二名分別是：國立師範大學和國立台灣大學，第一名是台灣師範大學是可以理解的，因為師大有世界有名的中文教學中心，因此有台灣最多的外國學生，應該都是去師範大學學習中文的外國學生。
+
 ```{r ToTWNUniversity,warning=FALSE}
 knitr::kable(Student_SchoolTOP10)
 ```
 
-看到是無法區分校別的人數最多，讓我覺得十分好奇，於是去找了之後發現
+但看到是無法區分校別的人數最多，讓我覺得十分好奇，於是去找了之後發現
+
 ```{r ToTWNUniversity2,warning=FALSE}
 knitr::kable(unknownSchool)
 ```
@@ -85,53 +101,84 @@ knitr::kable(unknownSchool)
 這9萬名學生的組成全部都是大陸研修生，代表在台灣有超過9萬名陸生根本不知道他是去哪所學校，這真的十分有趣。
 
 ### 各個國家來台灣唸書的學生人數條狀圖
+人數最多的國家是中國。
+
 ```{r ToTWNCountryBar,warning=FALSE}
-question2 <- Student_countryTOP10
-ggplot()+geom_bar(data = question2,aes(x = `國家`,y = `學生人數`),stat = "identity")
+ggplot(data = Question2Data)+
+  geom_bar(aes(x = `國家`,y = `學生人數`),stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90, size = 9, hjust = 1,vjust = 0.5))
 ```
 
 ### 各個國家來台灣唸書的學生人數面量圖
-```{r ToTWNCountryMap,warning=FALSE,message = FALSE}
-Student_countryTOP10$country <- c("CHN","MYS","HKG","JPN","VNM","MAC","IDN","KOR","USA","THA")
-question3Plot <- joinCountryData2Map(Student_countryTOP10, joinCode="ISO3", nameJoinColumn="country")
-mapCountryData(question3Plot , nameColumnToPlot="學生人數", mapTitle="外國學生人數與國家面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
+會發現顏色較深色的區域皆在亞洲，可知大部分來台讀書的學生是從亞洲地區國家來的，不過從圖中也可以發現幾乎全世界國家都有學生來台灣念書。
 
+```{r ToTWNCountryMap,warning=FALSE,message = FALSE}
+for (i in 1:nrow(Question3Data)){
+  for (j in 1:nrow(countrycodelist)){
+    if (Question3Data$`國家`[i] == countrycodelist$Taiwan[j]){
+      Question3Data$ISO3[i] = countrycodelist$ISO3[j]
+    }
+  }
+}
+question3Plot <- joinCountryData2Map(Question3Data, joinCode="ISO3", nameJoinColumn="ISO3")
+mapCountryData(question3Plot , nameColumnToPlot="學生人數", mapTitle="外國學生來台人數與國家面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
 ```
 
 ## 台灣學生國際交流分析
 
 ### 資料匯入與處理
 ```{r dataloadFromTWN,warning=FALSE}
-#Question 4-6
 Question4Data2 <- read.csv("~/GitHub/106bigdatacguimhw2-mctony999/Question4Data2.csv", stringsAsFactors=FALSE)
 Question4Data2 <- data.table(Question4Data2)
-Question4Data2$"對方國別" <- ifelse(Question4Data2$"對方國別" == "大陸地區","中國大陸",Question4Data2$"對方國別")
-TWStudent_countryTOP10 <- Question4Data2[,.(`學生人數` = sum(`總計`)),by= `對方國別`] %>%
-  arrange(desc(`學生人數`)) %>% head(10)
-TWStudent_SchoolTOP10 <- Question4Data2[,.(`學生人數` = sum(`總計`)),by= `學校名稱`] %>%
+Question4Data2$`對方國別` <- ifelse(Question4Data2$`對方國別` == "大陸地區","中國大陸",Question4Data2$對方國別)
+TWStudent_country <- Question4Data2[,.(`學生人數` = sum(`總計`)),by= `對方國別`] %>%
+  arrange(desc(`學生人數`))
+TWStudent_country$`對方國別`[1] <- "中國"
+Question6Data<- TWStudent_country
+#question5
+Question5Data <- TWStudent_country[1:29,]
+a <- c("其他國家" ,1629)
+Question5Data <- rbind(Question5Data,a)
+Question5Data$`學生人數` <- as.numeric(Question5Data$`學生人數`)
+#Top10
+TWStudent_countryTOP10 <-TWStudent_country %>% head(10)
+TWStudent_SchoolTOP10 <- Question4Data2[,.(學生人數 = sum(`總計`)),by= `學校名稱`] %>%
   arrange(desc(`學生人數`)) %>% head(10)
 ```
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流呢？
+前三名為中國、日本與美國。
+
 ```{r FromTWNCountry,warning=FALSE}
 knitr::kable(TWStudent_countryTOP10)
 ```
 
 ### 哪間大學的出國交流學生數最多呢？
+第一名是國立台灣大學，與預期相同因為是全台灣資金與資源最多的學校。
+
 ```{r FromTWNUniversity,warning=FALSE}
 knitr::kable(TWStudent_SchoolTOP10)
 ```
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流條狀圖
-```{r FromTWNCountryBar,warning=FALSE}
-ggplot()+geom_bar(data = TWStudent_countryTOP10,aes(x = `對方國別`, y = `學生人數`),stat = "identity")
+人數最高的是中國，再來是日本，最後是美國。
 
+```{r FromTWNCountryBar,warning=FALSE}
+ggplot(data = Question5Data) +
+  geom_bar(aes(x = `對方國別`, y = `學生人數`),stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90, size = 9, hjust = 1,vjust = 0.5))
 ```
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流面量圖
 ```{r FromTWNCountryMap,warning=FALSE,message = FALSE}
-TWStudent_countryTOP10$country <- c("CHN","JPN","USA","KOR","DEU","FRA","GBR","CAN","ESP","HKG")
-question6Plot <- joinCountryData2Map(TWStudent_countryTOP10, joinCode="ISO3", nameJoinColumn="country")
+for (i in 1:nrow(Question6Data)){
+  for (j in 1:nrow(countrycodelist)){
+    if (Question6Data$`對方國別`[i] == countrycodelist$Taiwan[j]){
+      Question6Data$ISO3[i] = countrycodelist$ISO3[j]
+    }
+  }
+}
+question6Plot <- joinCountryData2Map(Question6Data, joinCode="ISO3", nameJoinColumn="ISO3")
 mapCountryData(question6Plot , nameColumnToPlot="學生人數", mapTitle="台灣進修交流面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
 ```
 
@@ -146,17 +193,46 @@ Question7Top10 <- arrange(Question7Data,desc(`總人數`)) %>% head(10)
 ```
 
 ### 台灣學生最喜歡去哪些國家留學呢？
+台灣學生最喜歡去留學的地方前三名，分別為美國、澳洲與日本。
+
 ```{r FromTWNAb,warning=FALSE}
 knitr::kable(Question7Top10)
 ```
 
 ### 台灣學生最喜歡去哪些國家留學面量圖
 ```{r FromTWNAbMap,warning=FALSE}
-Question7Top10$country <- c("USA","AUS","JPN","CAN","GBR","DEU","NZL","POL","MYS","AUT")
-question8Plot <- joinCountryData2Map(Question7Top10, joinCode="ISO3", nameJoinColumn="country")
+for (i in 1:nrow(Question7Data)){
+  for (j in 1:nrow(countrycodelist)){
+    if (Question7Data$`國別`[i] == countrycodelist$Taiwan[j]){
+      Question7Data$ISO3[i] = countrycodelist$ISO3[j]
+    }
+  }
+}
+question8Plot <- joinCountryData2Map(Question7Data, joinCode="ISO3", nameJoinColumn="ISO3")
 mapCountryData(question8Plot , nameColumnToPlot="總人數", mapTitle="台灣出國留學國家面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
 ```
 
 ## 綜合分析
 
 請問來台讀書與離台讀書的來源國與留學國趨勢是否相同(5分)？想來台灣唸書的境外生，他們的母國也有很多台籍生嗎？請圖文並茂說明你的觀察(10分)。
+
+來台讀書與離台讀書的來源國與留學國趨勢並不相同，由以下兩張面量圖就可發現，來台灣念書最主要的國家來自亞洲地區，如中國與東南亞國家，而台灣出國留學大部分都選擇美國、澳洲或歐洲等地學校，只有少部分選擇亞洲國家留學。
+
+```{r Lastquestion1,warning=FALSE}
+mapCountryData(question3Plot , nameColumnToPlot="學生人數", mapTitle="外國學生來台人數與國家面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
+mapCountryData(question8Plot , nameColumnToPlot="總人數", mapTitle="台灣出國留學國家面量圖", catMethod = "pretty", colourPalette = "heat",lwd = 0.01)
+```
+
+因此可知大部分有很多學生來台灣念書的國家，其本土也有很多台灣學生的國家是很少的。只有日本一個國家來台學生很多，且在日本本土的台灣學生也很多，由下表可知，來台日本人有28200人是在台灣外國人數排名中的第四名，而在日台灣人有8444人，是台灣出國留學人數排名中的第三名，兩者排名相當。
+
+##在日本留學之台灣人
+```{r Lastquestion2,warning=FALSE}
+knitr::kable(Question7Top10[3,])
+```
+
+##在台灣留學之日本人
+```{r Lastquestion3,warning=FALSE}
+knitr::kable(Student_countryTOP10[4,])
+```
+
+

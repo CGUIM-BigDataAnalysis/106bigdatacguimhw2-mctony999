@@ -1,5 +1,0 @@
-met <- as.data.frame(read_csv("https://raw.githubusercontent.com/Rogerh91/Springboard-Blog-Tutorials/master/Maps%20with%20R%20and%20rworldmap/MetObjects_5k-sample.csv"))
-countries.met <- as.data.frame(table(met$Country))
-colnames(countries.met) <- c("country", "value")
-matched <- joinCountryData2Map(countries.met, joinCode="NAME", nameJoinColumn="country")
-mapCountryData(matched, nameColumnToPlot="value", mapTitle="Met Collection Country Sample", catMethod = "pretty", colourPalette = "heat")

@@ -1,21 +1,21 @@
 {
     "collab_server" : "",
     "contents" : "",
-    "created" : 1526821153469.000,
+    "created" : 1527326793408.000,
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1178011813",
-    "id" : "84D7FBDC",
-    "lastKnownWriteTime" : 1526822876,
-    "last_content_update" : 1526822876402,
+    "hash" : "1861955724",
+    "id" : "885A4365",
+    "lastKnownWriteTime" : 1527354306,
+    "last_content_update" : 1527354306034,
     "path" : "~/GitHub/106bigdatacguimhw2-mctony999/InternationalStudents.Rmd",
     "project_path" : "InternationalStudents.Rmd",
     "properties" : {
-        "cursorPosition" : "140,53",
-        "scrollLine" : "0"
+        "cursorPosition" : "236,0",
+        "scrollLine" : "223"
     },
-    "relative_order" : 6,
+    "relative_order" : 2,
     "source_on_save" : false,
     "source_window" : "",
     "type" : "r_markdown"
